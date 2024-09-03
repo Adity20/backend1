@@ -19,6 +19,10 @@ connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true
 
 app.use(json());
 app.use(express.json())
+app.get('/', (req, res) => {
+    res.send('Welcome to the Ethereum Transactions API. Use POST requests to interact with the API.');
+  });
+  
 export const fetchTransactions = async (req, res) => {
     const { address } = req.body;
   
