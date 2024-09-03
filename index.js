@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const mongoose = require('mongoose');
 const cron = require('node-cron');
-
+const cors = require('cors');
 const app = express();
 app.use(express.json());
 
@@ -38,7 +38,12 @@ const ethPriceSchema = new mongoose.Schema({
   price: Number,
   timestamp: { type: Date, default: Date.now }
 });
+const corsOptions = {
+  origin: 'https://a71688.netlify.app', 
+  optionsSuccessStatus: 200 
+};
 
+app.use(cors(corsOptions));
 const Transaction = mongoose.model('Transaction', transactionSchema);
 const EthPrice = mongoose.model('EthPrice', ethPriceSchema);
 
