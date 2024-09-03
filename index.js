@@ -1,58 +1,92 @@
-import express, { json } from 'express';
-import { connect } from 'mongoose';
-import { config } from 'dotenv';
-import cors from 'cors';
-import transactionRoutes from './routes/transactionRoute.js';
-import priceRoutes from './routes/priceRoute.js';
-import { fetchAndStorePrice } from './controllers/priceController.js';
+const express = require('express');
+const axios = require('axios');
+const mongoose = require('mongoose');
+const cron = require('node-cron');
 
-config();
 const app = express();
-app.use(cors({
-    origin: 'http://localhost:3000',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  }));
-connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+app.use(express.json());
 
-app.use(json());
-app.use(express.json())
-app.get('/', (req, res) => {
-    res.send('Welcome to the Ethereum Transactions API. Use POST requests to interact with the API.');
-  });
-  
-export const fetchTransactions = async (req, res) => {
-    const { address } = req.body;
-  
-    try {
-      const response = await axios.get(
-        `https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${process.env.ETHERSCAN_API_KEY}`
-      );
-  
-      const transactions = response.data.result;
-      await Promise.all(transactions.map(async (tx) => {
-        const transaction = new Transaction({ ...tx, address });
-        await transaction.save();
-      }));
-  
-      res.status(200).json(transactions);
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      res.status(500).json({ error: 'Error fetching transactions' });
-    }
-  };
-  
-  // Root route
-  app.post('/api', fetchTransactions);
-  
-app.use('/api', transactionRoutes);
-app.use('/api', priceRoutes);
+mongoose.connect('mongodb+srv://sharmaatul9164:adityasharma@cluster0.z1xzg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Could not connect to MongoDB:', err));
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  
-  setInterval(fetchAndStorePrice, 10 * 60 * 1000);
+const transactionSchema = new mongoose.Schema({
+  blockNumber: String,
+  timeStamp: String,
+  hash: String,
+  from: String,
+  to: String,
+  value: String,
+  gas: String,
+  gasPrice: String,
+  isError: String,
+  txreceipt_status: String,
+  input: String,
+  contractAddress: String,
+  cumulativeGasUsed: String,
+  gasUsed: String,
+  confirmations: String,
+  address: String,
 });
+
+const ethPriceSchema = new mongoose.Schema({
+  price: Number,
+  timestamp: { type: Date, default: Date.now }
+});
+const Transaction = mongoose.model('Transaction', transactionSchema);
+const EthPrice = mongoose.model('EthPrice', ethPriceSchema);
+app.get('/', (req, res) => {
+  res.send('Hello World');
+}
+);
+app.post('/api/transactions', async (req, res) => {
+  const { address } = req.body;
+  const apiKey = 'UVWAWSVFKUXIWT8PA8M611583IEAH9NNSD';
+
+  try {
+    const response = await axios.get(`https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`);
+    const transactions = response.data.result;
+
+    // Save transactions to database
+    for (const tx of transactions) {
+      const newTransaction = new Transaction({ ...tx, address });
+      await newTransaction.save();
+    }
+
+    res.status(200).json({ message: 'Transactions fetched and saved successfully', transactions });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching transactions', error: error.message });
+  }
+});
+cron.schedule('*/10 * * * *', async () => {
+  try {
+    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=inr');
+    const ethPrice = response.data.ethereum.inr;
+
+    // Save price to database
+    const newPrice = new EthPrice({ price: ethPrice });
+    await newPrice.save();
+
+    console.log('Ethereum price saved:', ethPrice);
+  } catch (error) {
+    console.error('Error fetching Ethereum price:', error.message);
+  }
+});
+app.get('/api/expenses', async (req, res) => {
+  const { address } = req.query;
+
+  try {
+    const transactions = await Transaction.find({ address });
+    const totalExpenses = transactions.reduce((acc, tx) => {
+      return acc + (parseFloat(tx.gasUsed) * parseFloat(tx.gasPrice)) / 1e18;
+    }, 0);
+    const latestPrice = await EthPrice.findOne().sort({ timestamp: -1 });
+
+    res.status(200).json({ totalExpenses, currentEthPrice: latestPrice.price });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching expenses', error: error.message });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
