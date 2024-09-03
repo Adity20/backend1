@@ -45,7 +45,7 @@ export const fetchTransactions = async (req, res) => {
   };
   
   // Root route
-  app.post('/', fetchTransactions);
+  app.post('/api', fetchTransactions);
   
 app.use('/api', transactionRoutes);
 app.use('/api', priceRoutes);
