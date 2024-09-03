@@ -4,6 +4,5 @@ import { fetchTransactions, getExpenses } from '../controllers/transactionContro
 const router = Router();
 
 router.post('/transactions', fetchTransactions);
-router.get('/expenses/:address', getExpenses);
 
 export default router;
