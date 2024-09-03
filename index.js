@@ -5,16 +5,15 @@ const cron = require('node-cron');
 const cors = require('cors');
 const app = express();
 app.use(express.json());
-
-// Connect to MongoDB
-mongoose.connect('mongodb+srv://sharmaatul9164:adityasharma@cluster0.z1xzg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', { useNewUrlParser: true, useUnifiedTopology: true })
+const config = require('dotenv');
+config.config();
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
   .catch(err => {
     console.error('Could not connect to MongoDB:', err);
-    process.exit(1); // Exit process with failure if MongoDB connection fails
+    process.exit(1); 
   });
 
-// Define schemas and models
 const transactionSchema = new mongoose.Schema({
   blockNumber: String,
   timeStamp: String,
@@ -53,17 +52,13 @@ app.get('/', (req, res) => {
 
 app.post('/api/transactions', async (req, res) => {
   const { address } = req.body;
-  const apiKey = 'UVWAWSVFKUXIWT8PA8M611583IEAH9NNSD';
+  const apiKey = process.env.ETHERSCAN_API_KEY;
 
   try {
-    // Fetch transactions from Etherscan
     const response = await axios.get(`https://api.etherscan.io/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=${apiKey}`);
     const transactions = response.data.result;
 
-    // Log the transactions to verify data
     console.log('Fetched transactions:', transactions);
-
-    // Save transactions to database
     for (const tx of transactions) {
       const newTransaction = new Transaction({ ...tx, address });
       await newTransaction.save();
@@ -80,11 +75,7 @@ cron.schedule('*/10 * * * *', async () => {
   try {
     const response = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=inr');
     const ethPrice = response.data.ethereum.inr;
-
-    // Log the Ethereum price to verify data
     console.log('Fetched Ethereum price:', ethPrice);
-
-    // Save price to database
     const newPrice = new EthPrice({ price: ethPrice });
     await newPrice.save();
 
