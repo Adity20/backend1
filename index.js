@@ -5,7 +5,6 @@ import cors from 'cors';
 import transactionRoutes from './routes/transactionRoute.js';
 import priceRoutes from './routes/priceRoute.js';
 import { fetchAndStorePrice } from './controllers/priceController.js';
-import { fetchTransactions } from './controllers/transactionController.js';
 
 config();
 const app = express();
