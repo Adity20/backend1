@@ -5,6 +5,7 @@ import cors from 'cors';
 import transactionRoutes from './routes/transactionRoute.js';
 import priceRoutes from './routes/priceRoute.js';
 import { fetchAndStorePrice } from './controllers/priceController.js';
+import { fetchTransactions } from './controllers/transactionController.js';
 
 config();
 const app = express();
@@ -18,7 +19,9 @@ connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true
   .catch(err => console.log(err));
 
 app.use(json());
-
+app.use(express.json())
+app.post('/', fetchTransactions);
+  
 app.use('/api', transactionRoutes);
 app.use('/api', priceRoutes);
 
