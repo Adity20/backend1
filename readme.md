@@ -1,9 +1,7 @@
-
 ---
 
 ### README for Backend Repository
 
-```markdown
 # Contact Management - Backend
 
 This repository contains the backend for the **Contact Management** feature, a mini CRM application. It provides RESTful API endpoints to manage customer and client contact details. The backend is built using Node.js, Express, and MongoDB.
@@ -32,14 +30,19 @@ This repository contains the backend for the **Contact Management** feature, a m
 ## 📦 Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/Adity20/backend1.git
-   cd contact-management-backend
+    ```bash
+    git clone https://github.com/Adity20/backend1.git
+    cd contact-management-backend
+    ```
 
 2. Install dependencies:
     ```bash
     npm install
+    ```
 
 3. Start server:
+    ```bash
+    node index.js
     ```
-    node index.js    
+
+---
